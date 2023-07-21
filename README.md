@@ -22,7 +22,7 @@ pip install unicorn
 ```
 ### install capstone (Disassembler)
 ```
-pip install -r requirements.txt
+pip install capstone
 ```
 
 ## 3. Execution

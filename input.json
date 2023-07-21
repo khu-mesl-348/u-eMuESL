@@ -1,0 +1,11 @@
+{
+    "files" : {
+        "elf_file" : "./source/toy_ex_mod_add",
+        "log_file_name" : "example"
+    },
+
+    "arch" : {
+        "Cortex-M4" : "./cortex_m4.json"
+    }
+}
+

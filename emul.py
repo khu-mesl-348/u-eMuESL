@@ -5,9 +5,21 @@ from setdata import *
 from logger import *
 import os
 
-def auto_set(uc, size, stack_addr, stack_size):
-    uc.mem_map(START_ADDRESS,size)
-    uc.mem_map(stack_addr-stack_size,stack_size)
+def auto_set(uc):
+    PAGE_SIZE = 4*1024
+
+    #mapping Flash memory
+    if flash_size > PAGE_SIZE:
+        uc.mem_map(START_ADDRESS // (PAGE_SIZE) * (PAGE_SIZE), ((flash_size // (PAGE_SIZE)) * (PAGE_SIZE)) + (PAGE_SIZE))
+    else:
+        uc.mem_map(START_ADDRESS // (PAGE_SIZE) * (PAGE_SIZE), (PAGE_SIZE))
+
+    #mapping RAM memory
+    if stack_addr - ram_addr[0] > PAGE_SIZE:
+        uc.mem_map((ram_addr[0]) // (PAGE_SIZE) * (PAGE_SIZE), (stack_addr - ram_addr[0] // (PAGE_SIZE)) * (PAGE_SIZE) + (PAGE_SIZE))
+    else:
+        uc.mem_map((ram_addr[0]) // (PAGE_SIZE) * (PAGE_SIZE), (PAGE_SIZE))
+
     uc.reg_write(UC_ARM_REG_SP, stack_addr)
     uc.reg_write(UC_ARM_REG_FP, stack_addr)
     uc.reg_write(UC_ARM_REG_LR, exit_addr)
@@ -21,8 +33,6 @@ def upload(uc):
 
         if e_sec[i][0] != 0:
             uc.mem_write(e_sec[i][0],cod)
-        else:
-            uc.mem_write(e_sec[i][1],cod) 
 
 def get_input_data(indata_arr):
     for i in range(len(indata_arr)):
@@ -31,21 +41,24 @@ def get_input_data(indata_arr):
 
 def get_output_data(uc,out_addr,len_addr):
     output = []
-    len_mem = uc.mem_read(len_addr,4)
+    len_mem = uc.mem_read(len_addr,MODE)
     cvt_len = int.from_bytes(len_mem, byteorder='little')
     # change mem to int
     for i in range(cvt_len):
-        out_mem = uc.mem_read(out_addr+i*4,4)
+        out_mem = uc.mem_read(out_addr+i*MODE,MODE)
         cvt_output = int.from_bytes(out_mem,byteorder="little")
         output.append(cvt_output)
     return output
-    
-
+            
 def make_refer(input, addr):
-    global make_ins_inIdx, make_ins_cnt, refsIdx, reffIdx
+    global make_ins_inIdx, make_ins_cnt, refsIdx, reffIdx, MODE
 
     f = open ('reference.txt', 'a')
-    mc = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+    if MODE == 2:
+        mc = Cs(CS_ARCH_ARM, CS_MODE_THUMB)
+    else: # MODE == 4
+        mc = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+
     mc.syntax = None
     mc.detail = True
     virtual_addr = 0
@@ -53,11 +66,9 @@ def make_refer(input, addr):
     num = 0
     # copy mnemonics to copy_mne
     # add modified register at copy_mne
-
     for insn in mc.disasm(input, addr):
         #print("%x, %x, %x" % (insn.address,e_sec[refsIdx][1],func_list[reffIdx][1]))
-        
-        if e_sec[refsIdx][1] == insn.address:
+        if e_sec[refsIdx][1] -2  == insn.address or e_sec[refsIdx][1] == insn.address:
             f.write("\nsection\t\t : %s\n" % e_sec[refsIdx][3])
             if e_sec[refsIdx][0] != 0:
                 f.write("REAL ADDRESS : %s\n\n" % hex(e_sec[refsIdx][0]))
@@ -66,16 +77,14 @@ def make_refer(input, addr):
                 
             refsIdx += 1
             if refsIdx == len(e_sec):
-                refsIdx = len(e_sec)-1      
+                refsIdx = len(e_sec)-1   
                      
-        if func_list[reffIdx][1] == insn.address:
+        if func_list[reffIdx][1] == insn.address + (MODE == 2):
             f.write("\nfunction\t : %s\n\n" % (func_list[reffIdx][0]))
             reffIdx += 1
             if reffIdx == len(func_list):
                 reffIdx = len(func_list)-1
         
-        # for print InData
-        # TODO: make it a function that accepts the global variable name from the user
         if virtual_addr != 0 and (sec_name == '.data') :
             f.write("0x%x:[0x%x] " %(insn.address, virtual_addr))
             for j in range(len(insn.bytes)):
@@ -93,7 +102,10 @@ def make_refer(input, addr):
         else:
             f.write("0x%x:\t%s\t%s\n" %(insn.address, insn.mnemonic, insn.op_str))
         
-        virtual_addr += 4
+        temp_ins = [insn.address, insn.mnemonic, insn.op_str]
+        instructions.append(temp_ins)
+            
+        virtual_addr += MODE
 
         line = []
         copy_mne.append(line)
@@ -105,13 +117,13 @@ def make_refer(input, addr):
 
     f.close()
 
-    if len(copy_mne)/int(len(CODE)/4) < 1:
+    if len(copy_mne)/int(len(CODE)/MODE) < 1:
         make_ins_cnt += 1
         line = []
         copy_mne.append(line)
         copy_mne[make_ins_inIdx].append("NONE")
         make_ins_inIdx += 1
-        retaddr = START_ADDRESS + make_ins_inIdx * 4
+        retaddr = (START_ADDRESS - (MODE == 2)) + make_ins_inIdx * MODE
         with open(elf_file, "rb") as f:
             f.seek(retaddr,0)
             fcode = f.read()
@@ -129,7 +141,7 @@ def code_hook(uc, address, size, user_data):
 
     sys.stdout = temp
 
-    if address == exit_addr_real:
+    if address == exit_addr_real - (MODE == 2):
         uc.emu_stop()
 
 def run():
@@ -137,20 +149,23 @@ def run():
     if os.path.isfile('reference.txt'):
         os.remove('reference.txt')
 
-    refcod = CODE
-    refaddr = START_ADDRESS
+    refcod = REF_CODE
+    refaddr = START_ADDRESS - (MODE == 2)
 
-    while len(copy_mne)/int(len(CODE)/4) < 1:
+    while len(copy_mne)/int(len(CODE)/MODE) < 1:
         refcod, refaddr = make_refer(refcod,refaddr)
 
     print("Emulating the code..")
 
     try:
-        # initialize Unicorn as ARM mode
-        mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
+        # initialize Unicorn
+        if MODE == 2: # (thumb mode)
+            mu = Uc(UC_ARCH_ARM, UC_MODE_THUMB)
+        else: # MODE == 4 (arm mode)
+            mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
 
         # map 4MB memory for emulating
-        auto_set(mu,4*1024*1024,STACK_ADDRESS,STACK_SIZE)
+        auto_set(mu)
 
         upload(mu)
 
@@ -161,9 +176,6 @@ def run():
         mu.emu_start(emu_ADDRESS, emu_ADDRESS + main_len)
 
         print(">>> Emulation done.")
-
-
-        # uncomment if you wanna see the result of Indata & OutData
 
         # print("InData = ", end="")
         # InData = get_input_data(InData_arr)

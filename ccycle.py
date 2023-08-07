@@ -5,22 +5,23 @@ N = 0   # The number of registers in the register list to be loaded or stored, i
 P = 0   # The number of cycles required for a pipline refill.
         # This ranges from 1 to 3 depending on the alignment and width of the target instruction, and whether the processor manages to speculate the address early
 B = 0   # The number of cycles required to perform the barrier operation. For DSB and DMB, the minumum number of cycles is zero. For ISB, the minimum number of cycles is equivalent to the number required for a pipeline refill
-        # But we don't use it the barrier operation
 # W = 0   # The number of cycles spent waiting for an appropriate event, but unicorn engine doesn't use system call, so we don't use it
+
 
 div_num = [0,0,2,3,4,5,6,7,8,9,10,11,12]
 total_cycle = 0
 
 
 class ARM:
-    def __init__(self, core, p, dn):
+    def __init__(self, core, p, b, dn):
         self.json_file = "./input.json"
         self.core = core
         self.div_num = div_num[dn]
         self.P = p
+        self.B = b
         self.N = 0
     
-    def cycle_cal(self, ins, modified_ins, op_str):
+    def cycle_cal(self, ins, op_str):
         with open(self.json_file) as j_f:
             arch = json.load(j_f)
 
@@ -48,6 +49,8 @@ class ARM:
                     for i in range(len(ins_key)):
                         if ins_key[i] == "P":
                             ins_key[i] = self.P
+                        elif ins_key[i] == "B":
+                            ins_key[i] = self.B
                         elif ins_key[i] == "N":
                             self.N = len(op_str[op_str.find('{') + 1: op_str.find('}')].split(','))
                             ins_key[i] = self.N

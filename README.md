@@ -2,10 +2,10 @@
 Unicorn engine 기반 ARM 가상화 도구
 
 # Introduction 📖
-- **현재 배포 버전**: `v1.0`
+- **현재 배포 버전**: `v1.1`
 - **지원 프로세서**: ARMv7 이하 (ARM 버전 8부터는 Unicorn에서 지원하지 않음)
-- **지원 파일 모드**: ARM mode
-
+- **지원 파일 모드**: ARM mode, Thumb mode
+- **버전 수정 사항**: Thumb mode 지원, stack 및 프로그램 사이즈 자동 할당
 # Getting Started 💡
 ## 1. Download resource
 ```commandline

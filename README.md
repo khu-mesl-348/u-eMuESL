@@ -30,30 +30,30 @@ pip install capstone
 ```
 config.py
 ```
-* elf_file = "./source/<ELF 파일명>" : 실행할 ELF 저장 경로
-* log_vir_in_file = "./ini_set/LogVirIN.csv" : 프로그램 input 설정 CSV 파일 경로
-* fault_reg_file = "./ini_set/LogFI.csv" : 이상행위 시나리오 설정 CSV 파일 경로
-* log_file_name = "<로그 파일명>" : 사용자 임의 설정 로그 파일명  
+* **elf_file** = "./source/<ELF 파일명>" : 실행할 ELF 저장 경로
+* **log_vir_in_file** = "./ini_set/LogVirIN.csv" : 프로그램 input 설정 CSV 파일 경로
+* **fault_reg_file** = "./ini_set/LogFI.csv" : 이상행위 시나리오 설정 CSV 파일 경로
+* **log_file_name** = "<로그 파일명>" : 사용자 임의 설정 로그 파일명  
 
 ### 프로그램 입력 파일
-* ./ini_set/LogVirIN.csv : 프로그램 input(전역변수명: vir_IN) 설정 CSV
+* **./ini_set/LogVirIN.csv** : 프로그램 input(전역변수명: vir_IN) 설정 CSV
     * (0,n) : ctr
     * (1 + n, n) : 전역변수 배열 index
-* ./ini_set/LogFI.csv: 이상행위 시나리오 설정 CSV 파일 경로
+* **./ini_set/LogFI.csv**: 이상행위 시나리오 설정 CSV 파일 경로
     * 미 설정 시, 정상 시나리오 자동 실행
 
 ### 프로그램 출력 파일
-* LogVirOUT.csv : 프로그램 output(전역변수명: vir_OUT)
-* LogVirOUT_Faulty.csv : 이상행위 설정 시 생성되는 프로그램 output
-* LogReg_Faulty.csv :  이상행위 설정 시 생성되는 로그 파일  
+* **LogVirOUT.csv** : 프로그램 output(전역변수명: vir_OUT)
+* **LogVirOUT_Faulty.csv** : 이상행위 설정 시 생성되는 프로그램 output
+* **LogReg_Faulty.csv** :  이상행위 설정 시 생성되는 로그 파일  
 
 
 # How To Use 💻
 ## 1. ELF 펌웨어 실행
 ELF(Executable and Linkable Format)을 인식하고 파일을 실행합니다.
 ## 2. 에뮬레이션 실행 중 내부 상태 로깅
-에뮬레이션 실행 과정을 로깅하여 /log 폴더에 저장합니다. 
-(저장 파일명: <날짜> LogReg.csv)
+에뮬레이션 실행 과정을 로깅하여 /log 폴더에 저장합니다.  
+(저장 파일명: <날짜> LogReg.csv)  
 아래 정보를 나타냅니다.  
 * 로그 라인 넘버(ctr)
 * 실행 주소
@@ -61,14 +61,14 @@ ELF(Executable and Linkable Format)을 인식하고 파일을 실행합니다.
 * 명령어 실행 전 레지스터 값
 * 명령어 실행 후 레지스터 값
 ## 3. 런타임 중 프로그램 input 데이터 변경
-프로그램 실행 중 프로그램 input 데이터를 지정 및 변경합니다.
+프로그램 실행 중 프로그램 input 데이터를 지정 및 변경합니다.  
 (파일명: ./ini_set/LogVirIN.csv)
 아래 정보를 나타냅니다.
 * (0,n) : ctr
     * 로그 라인 넘버(ctr)를 통해 데이터 변경 지점을 설정합니다.
 * (1 + n, n) : 전역변수 배열 index
 ## 4. 이상행위 시나리오 수행
-프로그램 실행 중 이상행위(오류 주입) 시나리오를 실행합니다.
+프로그램 실행 중 이상행위(오류 주입) 시나리오를 실행합니다.  
 기능은 및 설정 방법은 아래와 같습니다.
 * 레지스터별 데이터 변경
     * 미 변경 시, "NaN" 입력
@@ -78,8 +78,8 @@ ELF(Executable and Linkable Format)을 인식하고 파일을 실행합니다.
     * 설정 시, isNOP "TRUE" 또는 "FALSE" 입력
 
 ## 5. 파일 내부 정보 출력
-`reference.txt` 파일을 통해 ELF 파일의 전체의 내부 명령어 및 데이터, 섹션, 함수 등을 출력합니다.
-아래 정보를 나타냅니다.
+`reference.txt` 파일을 통해 ELF 파일의 전체의 내부 명령어 및 데이터, 섹션, 함수 등을 출력합니다.  
+아래 정보를 나타냅니다.  
 * 주소 (Flash address)
 * 실행 주소 (Real address(including RAM address))
 * 메모리 섹션
